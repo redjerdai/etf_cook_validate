@@ -42,8 +42,7 @@ X = data_pct.values[1:, [0, 1]]
 Y = data_pct.values[:-1, [0, 1]]
 """
 excluded = ['FXT', 'EFA', 'EEM']
-markers = [x for x in data.columns.values if x not in excluded]
-cols_x = [x for x in data_pct_lagged if any([y in x for y in markers])]
+cols_x = [x for x in data_pct_lagged.columns.values if 'LAG' in x and ~any([y in x for y in excluded])]
 X = data_pct_lagged.loc[:, cols_x].values[1:, :]
 Y = data_pct_lagged.values[:-1, [0, 1]]
 X_ = data_pct_lagged.values[1:, [0, 1]]
@@ -53,35 +52,18 @@ tt = data_pct_lagged.index.values[:-1]
 
 thresh = 100
 
-# Varloss "sola": 2L Tree
-"""
-predicted = numpy.full(shape=(Y.shape[0],), fill_value=numpy.nan, dtype=Y.dtype)
-
-predicted[(X[:, cols_x.index("10m2YY_LAG1")] <= -2.5) * (X[:, cols_x.index("TLT_LAG4")] <= -0.028)] = 0.945
-predicted[(X[:, cols_x.index("10m2YY_LAG1")] <= -2.5) * ~(X[:, cols_x.index("TLT_LAG4")] <= -0.028)] = 0.99
-predicted[~(X[:, cols_x.index("10m2YY_LAG1")] <= -2.5) * (X[:, cols_x.index("10YGB_LAG4")] <= 0.033)] = 0.468
-predicted[~(X[:, cols_x.index("10m2YY_LAG1")] <= -2.5) * ~(X[:, cols_x.index("10YGB_LAG4")] <= 0.033)] = 0.594
-
-predicted = predicted.reshape(-1, 1)
-predicted = numpy.concatenate((predicted, 1 - predicted), axis=1)
-
-result_dynamics_vst = (predicted * Y).sum(axis=1)
-result_cum_vst = (1 + result_dynamics_vst).cumprod()
-"""
 # Varloss "paty": 2L Tree
 
 predicted = numpy.full(shape=(Y[thresh:].shape[0],), fill_value=numpy.nan, dtype=Y.dtype)
 
-predicted[(X[thresh:, cols_x.index("TLT_LAG1")] <= 0.017) * (X[thresh:, cols_x.index("IVV_LAG1")] <= 0.004)] = 0.588
-predicted[(X[thresh:, cols_x.index("TLT_LAG1")] <= 0.017) * ~(X[thresh:, cols_x.index("IVV_LAG1")] <= 0.004)] = 0.923
-predicted[~(X[thresh:, cols_x.index("TLT_LAG1")] <= 0.017) * (X[thresh:, cols_x.index("IVV_LAG1")] <= 0.024)] = 0.057
-predicted[~(X[thresh:, cols_x.index("TLT_LAG1")] <= 0.017) * ~(X[thresh:, cols_x.index("IVV_LAG1")] <= 0.024)] = 0.752
+predicted[(X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.013) * (X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.06)] = 0.074
+predicted[(X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.013) * ~(X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.06)] = 0.482
+predicted[~(X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.013) * (X[thresh:, cols_x.index("UNEMPLJ_LAG2")] <= 0.043)] = 0.879
+predicted[~(X[thresh:, cols_x.index("10YGB_LAG1")] <= -0.013) * ~(X[thresh:, cols_x.index("UNEMPLJ_LAG2")] <= 0.043)] = 0.251
 
 predicted = predicted.reshape(-1, 1)
 predicted = numpy.concatenate((predicted, 1 - predicted), axis=1)
 
 commi = 0.01
 result_dynamics_vpt = (predicted * Y[thresh:]).sum(axis=1) * (1 - commi)
-
-# this is target series; it's last value [-1] = resulting performance of the model
 result_cum_vpt = (1 + result_dynamics_vpt).cumprod()
